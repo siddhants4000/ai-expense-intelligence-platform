@@ -1,0 +1,60 @@
+name: CI - AI Expense Intelligence Platform
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  spring-boot-build:
+    name: Spring Boot Backend Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend-springboot
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      - name: Build Spring Boot backend
+        run: ./mvnw clean package -DskipTests
+
+  fastapi-build:
+    name: FastAPI Service Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ai-service-fastapi
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ai-service-fastapi/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate FastAPI app import
+        run: python -c "from app.main import app; print(app.title)"
