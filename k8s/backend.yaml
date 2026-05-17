@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ai-expense
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: ai-expense-intelligence-platform-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/expense_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: expense_user
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: expense_password
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: AI_SERVICE_URL
+              value: http://ai-service:8000
+            - name: JWT_ISSUER_URI
+              value: http://localhost:8081/realms/expense-realm
+            - name: JWT_JWK_SET_URI
+              value: http://keycloak:8080/realms/expense-realm/protocol/openid-connect/certs
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: ai-expense
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
