@@ -17,6 +17,20 @@ services:
     container_name: expense_redis
     ports:
       - "6379:6379"
+  
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: expense_keycloak
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/expense-realm.json:/opt/keycloak/data/import/expense-realm.json
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1

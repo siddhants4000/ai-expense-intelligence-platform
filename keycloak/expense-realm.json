@@ -1,0 +1,68 @@
+{
+  "realm": "expense-realm",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN"
+      },
+      {
+        "name": "MEMBER"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "expense-api",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "expenseadmin",
+      "enabled": true,
+      "email": "expenseadmin@example.com",
+      "emailVerified": true,
+      "firstName": "Expense",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN",
+        "MEMBER"
+      ]
+    },
+    {
+      "username": "expensemember",
+      "enabled": true,
+      "email": "expensemember@example.com",
+      "emailVerified": true,
+      "firstName": "Expense",
+      "lastName": "Member",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MEMBER"
+      ]
+    }
+  ]
+}
