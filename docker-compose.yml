@@ -17,7 +17,7 @@ services:
     container_name: expense_redis
     ports:
       - "6379:6379"
-  
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: expense_keycloak
@@ -52,24 +52,6 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: expense_zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-  
-  prometheus:
-    image: prom/prometheus
-    container_name: expense_prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on:
-      - backend
-
-  grafana:
-    image: grafana/grafana
-    container_name: expense_grafana
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
 
   ai-service:
     build:
@@ -87,6 +69,7 @@ services:
       - redis
       - kafka
       - ai-service
+      - keycloak
     ports:
       - "8080:8080"
     environment:
@@ -97,6 +80,26 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       AI_SERVICE_URL: http://ai-service:8000
+      JWT_ISSUER_URI: http://localhost:8081/realms/expense-realm
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/expense-realm/protocol/openid-connect/certs
+
+  prometheus:
+    image: prom/prometheus
+    container_name: expense_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: expense_grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
 
 volumes:
   postgres_data:
