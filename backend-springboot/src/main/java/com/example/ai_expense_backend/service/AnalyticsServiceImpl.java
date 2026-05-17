@@ -12,9 +12,12 @@ import com.example.ai_expense_backend.repository.ExpenseRepository;
 import com.example.ai_expense_backend.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +30,22 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final ExpenseRepository expenseRepository;
     private final OrganizationRepository organizationRepository;
     private final AiServiceClient aiServiceClient;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
-    public ExpenseSummaryResponse getExpenseSummary(UUID organizationId) {
+        public ExpenseSummaryResponse getExpenseSummary(UUID organizationId) {
+        String cacheKey = "expense-summary:" + organizationId;
+
+        try {
+                String cachedValue = redisTemplate.opsForValue().get(cacheKey);
+
+                if (cachedValue != null) {
+                return objectMapper.readValue(cachedValue, ExpenseSummaryResponse.class);
+                }
+        } catch (Exception ignored) {
+        }
+
         Organization organization = getOrganization(organizationId);
         List<Expense> expenses = expenseRepository.findByOrganization(organization);
 
@@ -47,13 +63,24 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         RoundingMode.HALF_UP
                 );
 
-        return new ExpenseSummaryResponse(
+        ExpenseSummaryResponse response = new ExpenseSummaryResponse(
                 organization.getId(),
                 totalAmount,
                 totalExpenses,
                 averageAmount
         );
-    }
+
+        try {
+                redisTemplate.opsForValue().set(
+                        cacheKey,
+                        objectMapper.writeValueAsString(response),
+                        Duration.ofMinutes(10)
+                );
+        } catch (Exception ignored) {
+        }
+
+        return response;
+        }
 
     @Override
     public List<CategoryBreakdownResponse> getCategoryBreakdown(UUID organizationId) {

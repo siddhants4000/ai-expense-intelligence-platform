@@ -1,11 +1,15 @@
 package com.example.ai_expense_backend.service;
 
+import com.example.ai_expense_backend.dto.AiAnomalyResponse;
+import com.example.ai_expense_backend.dto.AiCategorizationRequest;
+import com.example.ai_expense_backend.dto.AiCategorizationResponse;
 import com.example.ai_expense_backend.dto.CreateExpenseRequest;
 import com.example.ai_expense_backend.dto.ExpenseResponse;
 import com.example.ai_expense_backend.entity.AppUser;
 import com.example.ai_expense_backend.entity.Expense;
 import com.example.ai_expense_backend.entity.ExpenseCategory;
 import com.example.ai_expense_backend.entity.Organization;
+import com.example.ai_expense_backend.event.ExpenseCreatedEvent;
 import com.example.ai_expense_backend.exception.InvalidRequestException;
 import com.example.ai_expense_backend.exception.ResourceNotFoundException;
 import com.example.ai_expense_backend.repository.AppUserRepository;
@@ -15,11 +19,8 @@ import com.example.ai_expense_backend.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
-import com.example.ai_expense_backend.dto.AiAnomalyResponse;
-import com.example.ai_expense_backend.dto.AiCategorizationRequest;
-import com.example.ai_expense_backend.dto.AiCategorizationResponse;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -33,6 +34,8 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final AppUserRepository appUserRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final AiServiceClient aiServiceClient;
+    private final StringRedisTemplate redisTemplate;
+    private final ExpenseEventProducer expenseEventProducer;
 
     @Override
     public ExpenseResponse createExpense(UUID organizationId, CreateExpenseRequest request) {
@@ -54,7 +57,69 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         Expense savedExpense = expenseRepository.save(expense);
 
+        redisTemplate.delete("expense-summary:" + organizationId);
+
+        ExpenseCreatedEvent event = new ExpenseCreatedEvent(
+                savedExpense.getId(),
+                organization.getId(),
+                createdBy.getId(),
+                savedExpense.getTitle(),
+                savedExpense.getAmount(),
+                savedExpense.getCategory().name(),
+                savedExpense.getExpenseDate(),
+                savedExpense.getCreatedAt()
+        );
+
+        expenseEventProducer.publishExpenseCreatedEvent(event);
+
         return mapToResponse(savedExpense);
+    }
+
+    @Override
+    public ExpenseResponse createExpenseWithAiCategory(
+            UUID organizationId,
+            CreateExpenseRequest request
+    ) {
+        AiCategorizationResponse aiResponse = previewCategory(request);
+
+        ExpenseCategory predictedCategory = ExpenseCategory.valueOf(
+                aiResponse.predicted_category()
+        );
+
+        CreateExpenseRequest updatedRequest = new CreateExpenseRequest(
+                request.title(),
+                request.description(),
+                request.amount(),
+                predictedCategory,
+                request.expenseDate(),
+                request.createdByUserId()
+        );
+
+        return createExpense(organizationId, updatedRequest);
+    }
+
+    @Override
+    public AiCategorizationResponse previewCategory(CreateExpenseRequest request) {
+        AiCategorizationRequest aiRequest = new AiCategorizationRequest(
+                request.title(),
+                request.description(),
+                request.amount(),
+                request.expenseDate()
+        );
+
+        return aiServiceClient.categorizeExpense(aiRequest);
+    }
+
+    @Override
+    public AiAnomalyResponse checkAnomaly(CreateExpenseRequest request) {
+        AiCategorizationRequest aiRequest = new AiCategorizationRequest(
+                request.title(),
+                request.description(),
+                request.amount(),
+                request.expenseDate()
+        );
+
+        return aiServiceClient.detectAnomaly(aiRequest);
     }
 
     @Override
@@ -94,53 +159,6 @@ public class ExpenseServiceImpl implements ExpenseService {
                 )
                 .map(this::mapToResponse);
     }
-
-    @Override
-    public AiCategorizationResponse previewCategory(CreateExpenseRequest request) {
-        AiCategorizationRequest aiRequest = new AiCategorizationRequest(
-                request.title(),
-                request.description(),
-                request.amount(),
-                request.expenseDate()
-        );
-
-        return aiServiceClient.categorizeExpense(aiRequest);
-        }
-
-        @Override
-        public ExpenseResponse createExpenseWithAiCategory(
-                UUID organizationId,
-                CreateExpenseRequest request
-        ) {
-                AiCategorizationResponse aiResponse = previewCategory(request);
-
-                ExpenseCategory predictedCategory = ExpenseCategory.valueOf(
-                        aiResponse.predicted_category()
-                );
-
-                CreateExpenseRequest updatedRequest = new CreateExpenseRequest(
-                        request.title(),
-                        request.description(),
-                        request.amount(),
-                        predictedCategory,
-                        request.expenseDate(),
-                        request.createdByUserId()
-                );
-
-                return createExpense(organizationId, updatedRequest);
-        }
-
-        @Override
-        public AiAnomalyResponse checkAnomaly(CreateExpenseRequest request) {
-        AiCategorizationRequest aiRequest = new AiCategorizationRequest(
-                request.title(),
-                request.description(),
-                request.amount(),
-                request.expenseDate()
-        );
-
-        return aiServiceClient.detectAnomaly(aiRequest);
-        }
 
     private Organization getOrganization(UUID organizationId) {
         return organizationRepository.findById(organizationId)
