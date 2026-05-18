@@ -1,11 +1,13 @@
 package com.example.ai_expense_backend.service;
 
 import com.example.ai_expense_backend.config.KafkaTopicConfig;
+import com.example.ai_expense_backend.dto.ExpenseNotificationResponse;
 import com.example.ai_expense_backend.entity.AuditLog;
 import com.example.ai_expense_backend.event.ExpenseCreatedEvent;
 import com.example.ai_expense_backend.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -15,6 +17,7 @@ import java.time.Instant;
 public class ExpenseEventConsumer {
 
     private final AuditLogRepository auditLogRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @KafkaListener(
             topics = KafkaTopicConfig.EXPENSE_CREATED_TOPIC,
@@ -39,6 +42,24 @@ public class ExpenseEventConsumer {
 
         auditLogRepository.save(auditLog);
 
-        System.out.println("Audit log saved for expense event: " + event.expenseId());
+        ExpenseNotificationResponse notification = new ExpenseNotificationResponse(
+                "EXPENSE_CREATED",
+                event.expenseId(),
+                event.organizationId(),
+                event.createdByUserId(),
+                event.title(),
+                event.amount(),
+                event.category(),
+                message,
+                Instant.now()
+        );
+
+        messagingTemplate.convertAndSend(
+                "/topic/organizations/" + event.organizationId() + "/expenses",
+                notification
+        );
+
+        System.out.println("Audit log saved and WebSocket notification sent for expense event: "
+                + event.expenseId());
     }
 }

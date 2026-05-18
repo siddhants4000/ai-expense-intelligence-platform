@@ -28,7 +28,8 @@ public class SecurityConfig {
                                 "/actuator/prometheus",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/ws/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
