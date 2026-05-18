@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<ExpenseResponse> createExpense(
             @PathVariable UUID organizationId,
@@ -31,6 +33,7 @@ public class ExpenseController {
         return ApiResponse.success("Expense created successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping
     public ApiResponse<Page<ExpenseResponse>> getExpensesByOrganization(
             @PathVariable UUID organizationId,
@@ -47,6 +50,7 @@ public class ExpenseController {
         return ApiResponse.success("Expenses fetched successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/category/{category}")
     public ApiResponse<Page<ExpenseResponse>> getExpensesByCategory(
             @PathVariable UUID organizationId,
@@ -64,6 +68,7 @@ public class ExpenseController {
         return ApiResponse.success("Expenses fetched by category successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/date-range")
     public ApiResponse<Page<ExpenseResponse>> getExpensesByDateRange(
             @PathVariable UUID organizationId,
@@ -87,38 +92,41 @@ public class ExpenseController {
         return ApiResponse.success("Expenses fetched by date range successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @PostMapping("/preview-category")
     public ApiResponse<?> previewCategory(
-                @PathVariable UUID organizationId,
-                @Valid @RequestBody CreateExpenseRequest request
-        ) {
+            @PathVariable UUID organizationId,
+            @Valid @RequestBody CreateExpenseRequest request
+    ) {
         return ApiResponse.success(
                 "AI category preview fetched successfully",
                 expenseService.previewCategory(request)
         );
-        }
+    }
 
-        @PostMapping("/auto-categorize")
-        public ApiResponse<ExpenseResponse> createExpenseWithAiCategory(
-                @PathVariable UUID organizationId,
-                @Valid @RequestBody CreateExpenseRequest request
-        ) {
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/auto-categorize")
+    public ApiResponse<ExpenseResponse> createExpenseWithAiCategory(
+            @PathVariable UUID organizationId,
+            @Valid @RequestBody CreateExpenseRequest request
+    ) {
         ExpenseResponse response =
                 expenseService.createExpenseWithAiCategory(organizationId, request);
 
         return ApiResponse.success("Expense created with AI category successfully", response);
-        }
+    }
 
-        @PostMapping("/anomaly-check")
-        public ApiResponse<?> checkAnomaly(
-                @PathVariable UUID organizationId,
-                @Valid @RequestBody CreateExpenseRequest request
-        ) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
+    @PostMapping("/anomaly-check")
+    public ApiResponse<?> checkAnomaly(
+            @PathVariable UUID organizationId,
+            @Valid @RequestBody CreateExpenseRequest request
+    ) {
         return ApiResponse.success(
                 "AI anomaly check completed successfully",
                 expenseService.checkAnomaly(request)
         );
-        }
+    }
 
     private PageRequest buildPageRequest(
             int page,
@@ -132,5 +140,4 @@ public class ExpenseController {
 
         return PageRequest.of(page, size, sort);
     }
-    
 }

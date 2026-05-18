@@ -8,6 +8,7 @@ import com.example.ai_expense_backend.dto.OrganizationResponse;
 import com.example.ai_expense_backend.service.OrganizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class OrganizationController {
 
     private final OrganizationService organizationService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<OrganizationResponse> createOrganization(
             @Valid @RequestBody CreateOrganizationRequest request
@@ -28,12 +30,14 @@ public class OrganizationController {
         return ApiResponse.success("Organization created successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping
     public ApiResponse<List<OrganizationResponse>> getAllOrganizations() {
         List<OrganizationResponse> response = organizationService.getAllOrganizations();
         return ApiResponse.success("Organizations fetched successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/{organizationId}")
     public ApiResponse<OrganizationResponse> getOrganizationById(
             @PathVariable UUID organizationId
@@ -42,6 +46,7 @@ public class OrganizationController {
         return ApiResponse.success("Organization fetched successfully", response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{organizationId}/members")
     public ApiResponse<OrganizationMemberResponse> addMember(
             @PathVariable UUID organizationId,
@@ -51,6 +56,7 @@ public class OrganizationController {
         return ApiResponse.success("Organization member added successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/{organizationId}/members")
     public ApiResponse<List<OrganizationMemberResponse>> getMembers(
             @PathVariable UUID organizationId

@@ -5,6 +5,7 @@ import com.example.ai_expense_backend.dto.CategoryBreakdownResponse;
 import com.example.ai_expense_backend.dto.ExpenseSummaryResponse;
 import com.example.ai_expense_backend.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/summary")
     public ApiResponse<ExpenseSummaryResponse> getExpenseSummary(
             @PathVariable UUID organizationId
@@ -27,6 +29,7 @@ public class AnalyticsController {
         return ApiResponse.success("Expense summary fetched successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/category-breakdown")
     public ApiResponse<List<CategoryBreakdownResponse>> getCategoryBreakdown(
             @PathVariable UUID organizationId
@@ -37,13 +40,14 @@ public class AnalyticsController {
         return ApiResponse.success("Category breakdown fetched successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/ai-insights")
-        public ApiResponse<?> getAiSpendingInsights(
-                @PathVariable UUID organizationId
-        ) {
+    public ApiResponse<?> getAiSpendingInsights(
+            @PathVariable UUID organizationId
+    ) {
         return ApiResponse.success(
                 "AI spending insights fetched successfully",
                 analyticsService.getAiSpendingInsights(organizationId)
         );
-        }
+    }
 }

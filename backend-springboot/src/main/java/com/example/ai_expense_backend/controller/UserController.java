@@ -6,6 +6,7 @@ import com.example.ai_expense_backend.dto.UserResponse;
 import com.example.ai_expense_backend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ public class UserController {
 
     private final UserService userService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<UserResponse> createUser(
             @Valid @RequestBody CreateUserRequest request
@@ -26,12 +28,14 @@ public class UserController {
         return ApiResponse.success("User created successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping
     public ApiResponse<List<UserResponse>> getAllUsers() {
         List<UserResponse> response = userService.getAllUsers();
         return ApiResponse.success("Users fetched successfully", response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER')")
     @GetMapping("/{userId}")
     public ApiResponse<UserResponse> getUserById(
             @PathVariable UUID userId
