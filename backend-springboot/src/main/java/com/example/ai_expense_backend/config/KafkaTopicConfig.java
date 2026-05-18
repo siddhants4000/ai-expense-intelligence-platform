@@ -10,9 +10,20 @@ public class KafkaTopicConfig {
 
     public static final String EXPENSE_CREATED_TOPIC = "expense-created-events";
 
+    public static final String EXPENSE_CREATED_DLT_TOPIC =
+            "expense-created-events-dlt";
+
     @Bean
     public NewTopic expenseCreatedTopic() {
         return TopicBuilder.name(EXPENSE_CREATED_TOPIC)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic expenseCreatedDltTopic() {
+        return TopicBuilder.name(EXPENSE_CREATED_DLT_TOPIC)
                 .partitions(1)
                 .replicas(1)
                 .build();

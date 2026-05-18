@@ -23,7 +23,7 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<ExpenseResponse> createExpense(
             @PathVariable UUID organizationId,
