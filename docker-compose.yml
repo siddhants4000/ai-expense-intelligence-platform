@@ -85,7 +85,7 @@ services:
       JWT_JWK_SET_URI: http://keycloak:8080/realms/expense-realm/protocol/openid-connect/certs
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: 5000
-      
+
   prometheus:
     image: prom/prometheus
     container_name: expense_prometheus
@@ -133,6 +133,26 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+  
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    container_name: expense_jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.152.0
+    container_name: expense_otel_collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - jaeger
 
 volumes:
   postgres_data:
