@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: {{ .Values.namespace }}
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: ai-service
+
+  template:
+    metadata:
+      labels:
+        app: ai-service
+
+    spec:
+      containers:
+        - name: ai-service
+          image: {{ .Values.aiService.image }}
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: {{ .Values.aiService.port }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: {{ .Values.namespace }}
+
+spec:
+  selector:
+    app: ai-service
+
+  ports:
+    - port: {{ .Values.aiService.port }}
+      targetPort: {{ .Values.aiService.port }}

@@ -1,0 +1,32 @@
+namespace: ai-expense
+
+backend:
+  image: ai-expense-backend:websocket-v2
+  port: 8080
+
+aiService:
+  image: ai-expense-intelligence-platform-ai-service:latest
+  port: 8000
+
+postgres:
+  image: postgres:16
+  database: expense_db
+  username: expense_user
+  password: expense_password
+  port: 5432
+  storage: 1Gi
+
+redis:
+  image: redis:7
+  port: 6379
+
+kafka:
+  image: apache/kafka:3.8.0
+  port: 9092
+  controllerPort: 9093
+
+keycloak:
+  image: quay.io/keycloak/keycloak:26.0
+  adminUsername: admin
+  adminPassword: admin
+  port: 8080
