@@ -1,0 +1,3 @@
+project_id = "your-gcp-project-id"
+region     = "europe-west3"
+artifact_registry_repository = "ai-expense-platform"
