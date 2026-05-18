@@ -20,6 +20,8 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
+COPY opentelemetry-javaagent.jar opentelemetry-javaagent.jar
+
 EXPOSE 8080
 
 ENV SPRING_PROFILES_ACTIVE=prod
